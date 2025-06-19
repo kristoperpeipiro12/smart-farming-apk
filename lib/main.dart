@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login.dart';
 import 'main_screen.dart';
-// import 'home.dart';
-// import 'dashboard.dart';
-// import 'riwayat.dart';
-// import 'informasi.dart';
 
 void main() {
   runApp(MyApp());

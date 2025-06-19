@@ -1,5 +1,6 @@
 // main_screen.dart
 import 'package:flutter/material.dart';
+import 'package:smart_farming/device.dart';
 import 'home.dart'; // Sesuaikan dengan file Anda
 import 'dashboard.dart';
 import 'riwayat.dart';
@@ -14,8 +15,8 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    HomeScreen(), // index 0
-    DashboardScreen(deviceId: 'IOT-20250518-202435'), // index 1
+    DeviceScreen(), // index 0
+    // DashboardScreen(), // index 1
     RiwayatScreen(), // index 2
     InformasiScreen(), // index 3
   ];
@@ -23,12 +24,12 @@ class _MainScreenState extends State<MainScreen> {
   void _onItemTapped(int rawIndex) {
     int actualIndex;
 
-    if (_selectedIndex == 0 || _selectedIndex == 3) {
+    if (_selectedIndex == 0 || _selectedIndex == 2) {
       // Jika dari halaman Home atau Informasi
       if (rawIndex == 0) {
         actualIndex = 0;
       } else {
-        actualIndex = 3;
+        actualIndex = 2;
       }
     } else {
       actualIndex = rawIndex;
@@ -40,28 +41,19 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   List<BottomNavigationBarItem> getNavigationItems() {
-    if (_selectedIndex == 0 || _selectedIndex == 3) {
-      // Hanya tampilkan Home dan Informasi
-      return const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Informasi'),
-      ];
-    } else {
-      // Tampilkan semua item
-      return const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Informasi'),
-      ];
-    }
+    return const [
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      BottomNavigationBarItem(icon: Icon(Icons.adb), label: 'Device'),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.bar_chart_sharp),
+        label: 'Riwayat',
+      ),
+      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+    ];
   }
 
   int getCurrentTabForIndex() {
-    if (_selectedIndex == 0 || _selectedIndex == 3) {
+    if (_selectedIndex == 0 || _selectedIndex == 2) {
       return _selectedIndex == 0 ? 0 : 1;
     }
     return _selectedIndex;
