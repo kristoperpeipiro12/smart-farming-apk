@@ -1,10 +1,8 @@
-// main_screen.dart
 import 'package:flutter/material.dart';
-import 'package:smart_farming/device.dart';
-import 'home.dart'; // Sesuaikan dengan file Anda
-import 'dashboard.dart';
-import 'riwayat.dart';
-import 'informasi.dart';
+// import 'package:smart_farming/home.dart'; // Halaman Home
+import 'package:smart_farming/device.dart'; // Halaman Device / Monitoring
+import 'package:smart_farming/riwayat_device.dart'; // Halaman Riwayat
+import 'package:smart_farming/informasi.dart'; // Halaman Profile / Informasi
 
 class MainScreen extends StatefulWidget {
   @override
@@ -15,35 +13,25 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    DeviceScreen(), // index 0
-    // DashboardScreen(), // index 1
-    RiwayatScreen(), // index 2
+    // HomeScreen(), // index 0
+    DeviceScreen(), // index 1
+    RiwayatDeviceScreen(), // index 2
     InformasiScreen(), // index 3
   ];
 
-  void _onItemTapped(int rawIndex) {
-    int actualIndex;
-
-    if (_selectedIndex == 0 || _selectedIndex == 2) {
-      // Jika dari halaman Home atau Informasi
-      if (rawIndex == 0) {
-        actualIndex = 0;
-      } else {
-        actualIndex = 2;
-      }
-    } else {
-      actualIndex = rawIndex;
-    }
-
+  void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = actualIndex;
+      _selectedIndex = index;
     });
   }
 
   List<BottomNavigationBarItem> getNavigationItems() {
     return const [
-      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-      BottomNavigationBarItem(icon: Icon(Icons.adb), label: 'Device'),
+      // BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.dashboard), // Ganti ikon sesuai preferensi
+        label: 'Monitoring',
+      ),
       BottomNavigationBarItem(
         icon: Icon(Icons.bar_chart_sharp),
         label: 'Riwayat',
@@ -52,24 +40,20 @@ class _MainScreenState extends State<MainScreen> {
     ];
   }
 
-  int getCurrentTabForIndex() {
-    if (_selectedIndex == 0 || _selectedIndex == 2) {
-      return _selectedIndex == 0 ? 0 : 1;
-    }
-    return _selectedIndex;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: getCurrentTabForIndex(),
+        currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: getNavigationItems(),
         selectedItemColor: Color.fromARGB(255, 10, 169, 71),
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        backgroundColor: Colors.white,
       ),
     );
   }

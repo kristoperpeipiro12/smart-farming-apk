@@ -12,7 +12,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Monitoring Aplikasi',
+      title: 'Smart Farming',
+
       theme: ThemeData(
         primarySwatch: Colors.lightGreen,
         appBarTheme: const AppBarTheme(

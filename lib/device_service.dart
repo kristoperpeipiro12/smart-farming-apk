@@ -28,10 +28,10 @@ class DeviceService {
         List<dynamic> devicesJson = responseData['data'];
         return devicesJson.map((json) => Device.fromJson(json)).toList();
       } else {
-        throw Exception("Tidak ada data device ditemukan");
+        throw ("Tidak ada data device ditemukan");
       }
     } else {
-      throw Exception("Device Belum Tersedia!");
+      throw ("Device Belum Tersedia!");
     }
   }
 
@@ -41,7 +41,7 @@ class DeviceService {
     final String? idUser = prefs.getString('id_user');
 
     if (idUser == null) {
-      throw Exception("ID User tidak ditemukan");
+      throw ("ID User tidak ditemukan");
     }
 
     final response = await http.post(
@@ -62,7 +62,7 @@ class DeviceService {
         return []; // Kembalikan list kosong jika tidak ada hasil
       }
     } else {
-      throw Exception("Gagal mencari device: ${response.statusCode}");
+      throw ("Device Tidak Tersedia!");
     }
   }
 }

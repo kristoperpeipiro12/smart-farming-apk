@@ -12,13 +12,54 @@ class DeviceScreen extends StatefulWidget {
 class _DeviceScreenState extends State<DeviceScreen> {
   late Future<List<Device>> futureDevices;
   late TextEditingController _searchController;
-  bool _isLoading = false;
+  bool _hasShownLoginSuccess = false;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
     futureDevices = DeviceService.fetchDevicesByUserId();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkLoginSuccess());
+  }
+
+  void _checkLoginSuccess() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstLogin = prefs.getBool('first_login') ?? true;
+
+    if (isFirstLogin && !_hasShownLoginSuccess) {
+      _hasShownLoginSuccess = true;
+      await prefs.setBool('first_login', false);
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.check_circle_outline, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text("Login Berhasil"),
+                ],
+              ),
+              content: Text("Selamat datang di Smart Farming!"),
+              actionsAlignment: MainAxisAlignment.center,
+              actions: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("Lanjut", style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+      );
+    }
   }
 
   void _onSearchChanged(String query) {
@@ -33,12 +74,26 @@ class _DeviceScreenState extends State<DeviceScreen> {
     }
   }
 
+  Future<void> _refreshDevices() async {
+    setState(() {
+      futureDevices = DeviceService.fetchDevicesByUserId();
+    });
+    await Future.delayed(Duration(milliseconds: 500));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pilih Device'),
+        title: Text('Monitoring'),
         backgroundColor: Colors.lightGreen,
+        elevation: 2,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -47,13 +102,26 @@ class _DeviceScreenState extends State<DeviceScreen> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: Icon(Icons.search, color: Colors.black),
                 hintText: 'Cari device...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.black),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.black),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.black),
                 ),
                 filled: true,
-                fillColor: Colors.grey[200],
+                fillColor: Colors.white,
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 12,
+                ),
               ),
               onChanged: _onSearchChanged,
             ),
@@ -64,48 +132,70 @@ class _DeviceScreenState extends State<DeviceScreen> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasData) {
-                    if (snapshot.data!.isEmpty) {
-                      return Center(
-                        child: Text("Tidak ada device aktif ditemukan"),
-                      );
-                    }
-                    return ListView.separated(
-                      itemCount: snapshot.data!.length,
-                      separatorBuilder: (_, __) => Divider(),
-                      itemBuilder: (context, index) {
-                        Device device = snapshot.data![index];
-                        return ListTile(
-                          title: Text(device.name),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [Text("ID: ${device.idDevice}")],
-                          ),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 12),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => DashboardScreen(
-                                      deviceId: device.idDevice,
-                                      deviceName: device.name,
-                                    ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    );
                   } else if (snapshot.hasError) {
                     return Center(
                       child: Text(
                         "${snapshot.error}",
-                        style: TextStyle(color: Colors.red),
+                        style: TextStyle(color: Colors.black, fontSize: 16),
+                      ),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Text(
+                        "Tidak ada device aktif ditemukan",
+                        style: TextStyle(color: Colors.grey, fontSize: 16),
                       ),
                     );
                   }
-                  return Center(child: Text("Terjadi kesalahan"));
+
+                  final devices = snapshot.data!;
+
+                  return RefreshIndicator(
+                    onRefresh: _refreshDevices,
+                    child: ListView.separated(
+                      itemCount: devices.length,
+                      separatorBuilder: (_, __) => Divider(height: 8),
+                      itemBuilder: (context, index) {
+                        final device = devices[index];
+                        return Card(
+                          elevation: 3,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            title: Text(
+                              device.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text("ID: ${device.idDevice}"),
+                            ),
+                            trailing: Icon(
+                              Icons.arrow_forward_ios,
+                              size: 14,
+                              color: Colors.black,
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => DashboardScreen(
+                                        deviceId: device.idDevice,
+                                        deviceName: device.name,
+                                      ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  );
                 },
               ),
             ),
@@ -113,11 +203,5 @@ class _DeviceScreenState extends State<DeviceScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 }

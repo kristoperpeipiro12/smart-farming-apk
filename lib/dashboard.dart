@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   final String deviceId;
   final String deviceName;
 
@@ -13,30 +14,63 @@ class DashboardScreen extends StatelessWidget {
     required this.deviceName,
   });
 
-  Future<Map<String, dynamic>> fetchSensorData(String deviceId) async {
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  late ValueNotifier<Map<String, dynamic>> _sensorDataNotifier;
+  Timer? _timer; // Untuk auto-refresh
+
+  @override
+  void initState() {
+    super.initState();
+    _sensorDataNotifier = ValueNotifier<Map<String, dynamic>>({});
+    _fetchSensorData(); // Ambil data awal
+    _startAutoRefresh(); // Mulai auto-refresh
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // Hentikan timer saat widget dihapus
+    _sensorDataNotifier.dispose();
+    super.dispose();
+  }
+
+  /// Fungsi untuk mengambil data sensor dari API
+  Future<void> _fetchSensorData() async {
     final url = Uri.parse(
       'https://smart-farming.kejatikalbar.com/api/mobile/dashboard/last-sensor-values',
     );
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'id_device': deviceId}),
-      );
-      if (response.statusCode == 200) {
-        final decodedResponse = jsonDecode(response.body);
-        if (decodedResponse['success'] == true) {
-          return decodedResponse['data'];
-        } else {
-          throw Exception('API error: ${decodedResponse['message']}');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'id_device': widget.deviceId}),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded['success'] == true) {
+        if (decoded['data'] == null || decoded['data'].isEmpty) {
+          throw Exception('Sensor Tidak Aktif');
         }
+        _sensorDataNotifier.value = decoded['data'];
       } else {
-        throw Exception('Gagal mengambil data: ${response.statusCode}');
+        throw Exception(decoded['message']);
       }
-    } catch (e) {
-      throw Exception('Terjadi kesalahan: $e');
+    } else {
+      throw Exception('Gagal mengambil data sensor');
     }
   }
+
+  /// Fungsi untuk memulai auto-refresh
+  void _startAutoRefresh() {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _fetchSensorData(); // Memanggil refresh setiap 5 detik
+    });
+  }
+
+  String getPumpStatus(int value) => value == 1 ? 'ON' : 'OFF';
 
   @override
   Widget build(BuildContext context) {
@@ -45,72 +79,66 @@ class DashboardScreen extends StatelessWidget {
         title: Text('Realtime Monitoring'),
         backgroundColor: Colors.lightGreen,
       ),
-      body: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            StreamBuilder<DateTime>(
-              stream: Stream.periodic(
-                const Duration(seconds: 1),
-                (_) => DateTime.now(),
-              ),
-              builder: (context, snapshot) {
-                final now = snapshot.data ?? DateTime.now();
-                final formattedDate = DateFormat('dd MMM yyyy').format(now);
-                final formattedTime = DateFormat('HH:mm:ss').format(now);
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$deviceName ($deviceId)',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$formattedDate | $formattedTime',
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: StreamBuilder<Map<String, dynamic>>(
+      body: SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              StreamBuilder<DateTime>(
                 stream: Stream.periodic(
                   const Duration(seconds: 1),
-                ).asyncMap((_) => fetchSensorData(deviceId)),
+                  (_) => DateTime.now(),
+                ),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (!snapshot.hasData) {
-                    return const Center(child: Text('Tidak ada data'));
+                  final now = snapshot.data ?? DateTime.now();
+                  final formattedDate = DateFormat('dd MMM yyyy').format(now);
+                  final formattedTime = DateFormat('HH:mm:ss').format(now);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${widget.deviceName} (${widget.deviceId})',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$formattedDate | $formattedTime',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              ValueListenableBuilder<Map<String, dynamic>>(
+                valueListenable: _sensorDataNotifier,
+                builder: (context, sensorData, _) {
+                  if (sensorData.isEmpty) {
+                    return Center(child: CircularProgressIndicator());
                   }
 
-                  final data = snapshot.data!;
-
                   final phValue =
-                      (data['S-PH']?['latest_value'] ?? 0.0).toDouble();
+                      (sensorData['S-PH']?['latest_value'] ?? 0.0).toDouble();
                   final humidityValue =
-                      (data['S-MOIS']?['latest_value'] ?? 0.0).toDouble();
+                      (sensorData['S-MOIS']?['latest_value'] ?? 0.0).toDouble();
                   final pump1Status =
-                      data['S-POMPA1']?['status'] == 'ON' ? 1 : 0;
+                      sensorData['S-POMPA1']?['status'] == 'ON' ? 1 : 0;
                   final pump2Status =
-                      data['S-POMPA2']?['status'] == 'ON' ? 1 : 0;
+                      sensorData['S-POMPA2']?['status'] == 'ON' ? 1 : 0;
                   final sisaPupuk =
-                      (data['S-AIR1']?['latest_value'] ?? 0.0).toDouble();
+                      (sensorData['S-AIR1']?['latest_value'] ?? 0.0).toDouble();
                   final sisaAir =
-                      (data['S-AIR2']?['latest_value'] ?? 0.0).toDouble();
+                      (sensorData['S-AIR2']?['latest_value'] ?? 0.0).toDouble();
 
-                  // Status tambahan
                   String statusPh;
                   Color colorPh;
                   if (phValue < 6) {
@@ -124,35 +152,18 @@ class DashboardScreen extends StatelessWidget {
                     colorPh = Colors.blue;
                   }
 
-                  String statusKelembapan;
-                  Color colorKelembapan;
-                  if (humidityValue < 40) {
-                    statusKelembapan = "Kering";
-                    colorKelembapan = Colors.orange;
-                  } else {
-                    statusKelembapan = "Lembab";
-                    colorKelembapan = Colors.green;
-                  }
+                  String statusKelembapan =
+                      humidityValue < 40 ? "Kering" : "Lembab";
+                  Color colorKelembapan =
+                      humidityValue < 40 ? Colors.orange : Colors.green;
 
-                  String statusLevelPupuk;
-                  Color colorLevelPupuk;
-                  if (sisaPupuk < 20) {
-                    statusLevelPupuk = "Kurang";
-                    colorLevelPupuk = Colors.red;
-                  } else {
-                    statusLevelPupuk = "Cukup";
-                    colorLevelPupuk = Colors.green;
-                  }
+                  String statusLevelPupuk = sisaPupuk < 20 ? "Kurang" : "Cukup";
+                  Color colorLevelPupuk =
+                      sisaPupuk < 20 ? Colors.red : Colors.green;
 
-                  String statusLevelAir;
-                  Color colorLevelAir;
-                  if (sisaAir < 20) {
-                    statusLevelAir = "Kurang";
-                    colorLevelAir = Colors.red;
-                  } else {
-                    statusLevelAir = "Cukup";
-                    colorLevelAir = Colors.green;
-                  }
+                  String statusLevelAir = sisaAir < 20 ? "Kurang" : "Cukup";
+                  Color colorLevelAir =
+                      sisaAir < 20 ? Colors.red : Colors.green;
 
                   return GridView.count(
                     crossAxisCount: 2,
@@ -161,88 +172,73 @@ class DashboardScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
-                      // pH Tanah - Circular Gauge
                       InfoCardGauge(
                         title: "pH Tanah",
                         value: phValue,
                         max: 14,
                         icon: Icons.science,
                         color: const Color.fromARGB(255, 105, 52, 1),
-                        additionalInfo: "$statusPh",
+                        additionalInfo: statusPh,
                         infoColor: colorPh,
                       ),
-
-                      // Kelembapan - Circular Gauge + Persentase
                       InfoCardGauge(
                         title: "Kelembapan",
                         value: humidityValue,
                         max: 100,
                         icon: Icons.water_drop,
                         color: Colors.blue,
-                        additionalInfo: "$statusKelembapan",
+                        additionalInfo: statusKelembapan,
                         infoColor: colorKelembapan,
                         showPercentage: true,
                         suffix: '%',
                       ),
-
-                      // Wadah Pupuk - Circular Gauge + Persentase
                       InfoCardGauge(
                         title: "Level Air (Wadah Pupuk)",
                         value: sisaPupuk,
                         max: 100,
                         icon: Icons.inventory_2,
                         color: Colors.orange,
-                        additionalInfo: "$statusLevelPupuk",
+                        additionalInfo: statusLevelPupuk,
                         infoColor: colorLevelPupuk,
                         showPercentage: true,
                         suffix: '%',
                       ),
-
-                      // Wadah Air - Circular Gauge + Persentase
                       InfoCardGauge(
                         title: "Level Air (Wadah Air)",
                         value: sisaAir,
                         max: 100,
                         icon: Icons.water_drop_rounded,
                         color: Colors.cyan,
-                        additionalInfo: "$statusLevelAir",
+                        additionalInfo: statusLevelAir,
                         infoColor: colorLevelAir,
                         showPercentage: true,
                         suffix: '%',
                       ),
-
-                      // Pompa 1 - ON / OFF
                       InfoCard(
                         title1: "Pompa 1 - Nutrisi",
                         value1: getPumpStatus(pump1Status),
                         ikon: Icons.vaccines,
-                        color: Colors.deepOrange,
+                        color: pump1Status == 1 ? Colors.green : Colors.red,
                       ),
-
-                      // Pompa 2 - ON / OFF
                       InfoCard(
                         title1: "Pompa 2 - Penyiraman",
                         value1: getPumpStatus(pump2Status),
                         ikon: Icons.shower,
-                        color: const Color.fromARGB(255, 0, 68, 214),
+                        color: pump2Status == 1 ? Colors.green : Colors.red,
                       ),
                     ],
                   );
                 },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
-
-  String getPumpStatus(int value) {
-    return value == 1 ? 'ON' : 'OFF';
-  }
 }
 
-// Card Biasa untuk Pompa
+/// Widget InfoCard untuk menampilkan informasi teks
 class InfoCard extends StatelessWidget {
   final String title1;
   final String value1;
@@ -311,7 +307,7 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-// Circular Gauge Widget
+/// Widget InfoCardGauge untuk menampilkan informasi gauge
 class InfoCardGauge extends StatelessWidget {
   final String title;
   final double value;

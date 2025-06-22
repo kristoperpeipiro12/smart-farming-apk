@@ -1,14 +1,34 @@
 // informasi.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'login.dart'; // Halaman login Anda
+import 'login.dart';
 
-class InformasiScreen extends StatelessWidget {
+class InformasiScreen extends StatefulWidget {
+  @override
+  _InformasiScreenState createState() => _InformasiScreenState();
+}
+
+class _InformasiScreenState extends State<InformasiScreen> {
+  String _nama = '-';
+  String _username = '-';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _nama = prefs.getString('nama') ?? '-';
+      _username = prefs.getString('username') ?? '-';
+    });
+  }
+
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('isLoggedIn'); // Hapus status login
-
-    // Navigasi ke halaman login
+    await prefs.clear();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
@@ -18,37 +38,64 @@ class InformasiScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Informasi")),
+      appBar: AppBar(title: Text("Profil Pengguna")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            CircleAvatar(
+              radius: 48,
+              backgroundColor: Colors.green.shade200,
+              child: Icon(Icons.person, size: 48, color: Colors.white),
+            ),
+            SizedBox(height: 16),
             Text(
-              'Profil Pengguna',
+              _nama,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            Divider(),
+            Text('@$_username', style: TextStyle(color: Colors.grey)),
+            Divider(height: 40),
             ListTile(
-              leading: Icon(Icons.person),
-              title: Text('Nama Pengguna'),
-              subtitle: Text('Admin'), // Ganti dengan data dinamis jika ada
+              leading: Icon(Icons.people, color: Colors.blue),
+              title: Text("Level Pengguna"),
+              subtitle: Text("User"),
             ),
             ListTile(
-              leading: Icon(Icons.email),
-              title: Text('Email'),
-              subtitle: Text('admin@example.com'),
+              leading: Icon(Icons.verified_user, color: Colors.green),
+              title: Text("Status"),
+              subtitle: Text("Aktif"),
             ),
-            SizedBox(height: 30),
+            Spacer(),
             ElevatedButton.icon(
-              onPressed: () {
-                _logout(context); // Panggil fungsi logout
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder:
+                      (context) => AlertDialog(
+                        title: Text("Konfirmasi Logout"),
+                        content: Text("Apakah Anda yakin ingin keluar?"),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text("Batal"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: Text("Ya, Keluar"),
+                          ),
+                        ],
+                      ),
+                );
+                if (confirm == true) {
+                  _logout(context);
+                }
               },
               icon: Icon(Icons.logout),
-              label: Text('Keluar'),
+              label: Text("Keluar"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
+                minimumSize: Size(double.infinity, 48),
               ),
             ),
           ],
