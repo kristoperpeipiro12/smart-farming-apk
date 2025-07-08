@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 class DashboardScreen extends StatefulWidget {
   final String deviceId;
   final String deviceName;
-
   const DashboardScreen({
     super.key,
     required this.deviceId,
@@ -20,7 +19,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late ValueNotifier<Map<String, dynamic>> _sensorDataNotifier;
-  Timer? _timer; // Untuk auto-refresh
+  Timer? _timer;
 
   @override
   void initState() {
@@ -32,7 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel(); // Hentikan timer saat widget dihapus
+    _timer?.cancel();
     _sensorDataNotifier.dispose();
     super.dispose();
   }
@@ -49,24 +48,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      if (decoded['success'] == true) {
-        if (decoded['data'] == null || decoded['data'].isEmpty) {
-          throw Exception('Sensor Tidak Aktif');
-        }
-        _sensorDataNotifier.value = decoded['data'];
-      } else {
-        throw Exception(decoded['message']);
-      }
+      final data = jsonDecode(response.body);
+      _sensorDataNotifier.value = data['data'] ?? {};
     } else {
-      throw Exception('Gagal mengambil data sensor');
+      debugPrint('Gagal mengambil data sensor: ${response.statusCode}');
     }
   }
 
-  /// Fungsi untuk memulai auto-refresh
+  /// Fungsi untuk memulai auto-refresh setiap 5 detik
   void _startAutoRefresh() {
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      _fetchSensorData(); // Memanggil refresh setiap 5 detik
+      _fetchSensorData();
     });
   }
 
@@ -80,7 +72,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.lightGreen,
       ),
       body: SingleChildScrollView(
-        physics: AlwaysScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -118,12 +110,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
                 },
               ),
+
               const SizedBox(height: 24),
               ValueListenableBuilder<Map<String, dynamic>>(
                 valueListenable: _sensorDataNotifier,
                 builder: (context, sensorData, _) {
                   if (sensorData.isEmpty) {
-                    return Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   final phValue =
@@ -238,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-/// Widget InfoCard untuk menampilkan informasi teks
+// Widget untuk kartu teks
 class InfoCard extends StatelessWidget {
   final String title1;
   final String value1;
@@ -307,7 +300,7 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-/// Widget InfoCardGauge untuk menampilkan informasi gauge
+// Widget untuk kartu gauge
 class InfoCardGauge extends StatelessWidget {
   final String title;
   final double value;

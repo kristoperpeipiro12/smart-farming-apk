@@ -125,20 +125,12 @@ class _LoginPageState extends State<LoginPage> {
                     Hero(
                       tag: 'logo',
                       child: Image.asset(
-                        'assets/logo.jpg',
+                        'assets/logoapk.png',
                         width: 160,
                         height: 160,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      "Smart Farming",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[800],
-                      ),
-                    ),
+
                     SizedBox(height: 32),
 
                     // Username Field

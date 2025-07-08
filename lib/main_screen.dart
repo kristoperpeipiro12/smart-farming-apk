@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-// import 'package:smart_farming/home.dart'; // Halaman Home
 import 'package:smart_farming/device.dart'; // Halaman Device / Monitoring
 import 'package:smart_farming/riwayat_device.dart'; // Halaman Riwayat
 import 'package:smart_farming/informasi.dart'; // Halaman Profile / Informasi
+import 'package:smart_farming/mqtt_sevice.dart'; // Layanan MQTT
+import 'package:shared_preferences/shared_preferences.dart'; // Untuk membaca id_user
 
 class MainScreen extends StatefulWidget {
   @override
@@ -11,13 +12,30 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  late MqttService mqttService;
 
   final List<Widget> _pages = [
-    // HomeScreen(), // index 0
-    DeviceScreen(), // index 1
-    RiwayatDeviceScreen(), // index 2
-    InformasiScreen(), // index 3
+    DeviceScreen(), // index 0
+    RiwayatDeviceScreen(), // index 1
+    InformasiScreen(), // index 2
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initMqtt();
+  }
+
+  Future<void> _initMqtt() async {
+    // Ambil id_user dari SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final idUser = prefs.getString('id_user') ?? '';
+
+    // Inisialisasi MQTT service dengan id_user
+    mqttService = MqttService(idUser);
+    await mqttService.connect();
+    mqttService.subscribe(); // Subscribe ke topik IOT/NOTIF/{id_user}
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -27,7 +45,6 @@ class _MainScreenState extends State<MainScreen> {
 
   List<BottomNavigationBarItem> getNavigationItems() {
     return const [
-      // BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
       BottomNavigationBarItem(
         icon: Icon(Icons.dashboard), // Ganti ikon sesuai preferensi
         label: 'Monitoring',

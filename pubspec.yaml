@@ -17,14 +17,21 @@ dependencies:
   syncfusion_flutter_gauges: ^29.2.5
   shared_preferences: ^2.2.2
   json_annotation: ^4.8.0
+  flutter_local_notifications: ^17.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
   intl: ^0.20.2
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
   assets:
     - assets/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logoapk.png"

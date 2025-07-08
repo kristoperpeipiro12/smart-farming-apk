@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_farming/device_model.dart';
 import 'package:smart_farming/device_service.dart';
 import 'dashboard.dart';
+import 'notification_service.dart';
 
 class DeviceScreen extends StatefulWidget {
   @override
@@ -126,6 +127,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
               onChanged: _onSearchChanged,
             ),
             SizedBox(height: 16),
+
             Expanded(
               child: FutureBuilder<List<Device>>(
                 future: futureDevices,
@@ -147,9 +149,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
                       ),
                     );
                   }
-
                   final devices = snapshot.data!;
-
                   return RefreshIndicator(
                     onRefresh: _refreshDevices,
                     child: ListView.separated(
@@ -174,11 +174,13 @@ class _DeviceScreenState extends State<DeviceScreen> {
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Text("ID: ${device.idDevice}"),
                             ),
+
                             trailing: Icon(
                               Icons.arrow_forward_ios,
                               size: 14,
                               color: Colors.black,
                             ),
+
                             onTap: () {
                               Navigator.push(
                                 context,
