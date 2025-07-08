@@ -1,4 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:async';
+import 'package:uuid/uuid.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -14,23 +16,27 @@ class NotificationService {
     await _notificationsPlugin.initialize(initializationSettings);
   }
 
+  // Untuk DateTime.now()
+
   static void showNotification(String message) async {
-    const AndroidNotificationDetails
-    androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'smart_farming_channel', // Channel ID (unik di seluruh aplikasi)
-      'Smart Farming Notifications', // Channel Name (deskriptif untuk pengguna)
-      importance: Importance.max, // Tingkat kepentingan notifikasi
-      priority: Priority.high, // Prioritas notifikasi
-      ticker: 'ticker', // Ticker text (opsional)
-      playSound: true, // Mainkan suara saat notifikasi muncul
-    );
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'smart_farming_channel', // Channel ID
+          'Smart Farming Notifications', // Channel Name
+          importance: Importance.max,
+          priority: Priority.high,
+        );
 
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
     );
 
+    // Hasilkan UUID dan konversi ke hash code
+    final String uuid = const Uuid().v4();
+    final int notificationId = uuid.hashCode;
+
     await _notificationsPlugin.show(
-      0, // ID notifikasi (unik untuk setiap notifikasi)
+      notificationId, // ID notifikasi unik dalam rentang 32-bit
       'Smart Farming', // Judul notifikasi
       message, // Pesan notifikasi
       platformChannelSpecifics,
