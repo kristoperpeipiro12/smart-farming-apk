@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_farming/device_model.dart';
 import 'package:smart_farming/device_service.dart';
 import 'dashboard.dart';
-import 'notification_service.dart';
 
 class DeviceScreen extends StatefulWidget {
   @override

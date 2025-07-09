@@ -3,10 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'login.dart';
 import 'main_screen.dart';
 import 'notification_service.dart';
+import 'background_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.initialize();
+  initializeBackgroundService();
   final prefs = await SharedPreferences.getInstance();
   final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
