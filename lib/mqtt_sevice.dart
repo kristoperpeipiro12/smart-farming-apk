@@ -10,8 +10,8 @@ class MqttService {
 
   Future<void> connect() async {
     client = MqttServerClient(
-      'mqtt.uidkalbar.com',
-      'androidkris',
+      '103.145.126.158',
+      '$idUser',
     ); // Ganti dengan broker MQTT Anda
     client.port = 1883; // Port MQTT (default 1883)
 
