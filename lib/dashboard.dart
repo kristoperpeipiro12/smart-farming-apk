@@ -79,15 +79,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              StreamBuilder<DateTime>(
-                stream: Stream.periodic(
-                  const Duration(seconds: 1),
-                  (_) => DateTime.now(),
-                ),
-                builder: (context, snapshot) {
-                  final now = snapshot.data ?? DateTime.now();
-                  final formattedDate = DateFormat('dd MMM yyyy').format(now);
-                  final formattedTime = DateFormat('HH:mm:ss').format(now);
+              ValueListenableBuilder<Map<String, dynamic>>(
+                valueListenable: _sensorDataNotifier,
+                builder: (context, sensorData, _) {
+                  final sPhTimestampStr = sensorData['S-PH']?['timestamp'];
+                  DateTime? sPhTimestamp;
+
+                  if (sPhTimestampStr != null) {
+                    sPhTimestamp = DateTime.tryParse(sPhTimestampStr);
+                  }
+
+                  final formattedDate =
+                      sPhTimestamp != null
+                          ? DateFormat('dd MMM yyyy').format(sPhTimestamp)
+                          : '-';
+                  final formattedTime =
+                      sPhTimestamp != null
+                          ? DateFormat('HH:mm:ss').format(sPhTimestamp)
+                          : '-';
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
